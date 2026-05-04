@@ -37,6 +37,11 @@ def make_cameras_from_configs(camera_configs: dict[str, CameraConfig]) -> dict[s
 
             cameras[key] = RealSenseCamera(cfg)
 
+        elif cfg.type == "sentech":
+            from .sentech.camera_sentech import SentechCamera
+
+            cameras[key] = SentechCamera(cfg)
+
         elif cfg.type == "reachy2_camera":
             from .reachy2_camera.reachy2_camera import Reachy2Camera
 

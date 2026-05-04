@@ -82,6 +82,7 @@ from lerobot.cameras import (  # noqa: F401
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig  # noqa: F401
 from lerobot.cameras.reachy2_camera.configuration_reachy2_camera import Reachy2CameraConfig  # noqa: F401
 from lerobot.cameras.realsense.configuration_realsense import RealSenseCameraConfig  # noqa: F401
+from lerobot.cameras.sentech.configuration_sentech import SentechCameraConfig  # noqa: F401
 from lerobot.cameras.zmq.configuration_zmq import ZMQCameraConfig  # noqa: F401
 from lerobot.configs import parser
 from lerobot.configs.policies import PreTrainedConfig

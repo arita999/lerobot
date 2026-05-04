@@ -42,6 +42,8 @@ from lerobot.cameras.opencv.camera_opencv import OpenCVCamera
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig
 from lerobot.cameras.realsense.camera_realsense import RealSenseCamera
 from lerobot.cameras.realsense.configuration_realsense import RealSenseCameraConfig
+from lerobot.cameras.sentech.camera_sentech import SentechCamera
+from lerobot.cameras.sentech.configuration_sentech import SentechCameraConfig
 
 logger = logging.getLogger(__name__)
 
@@ -88,13 +90,47 @@ def find_all_realsense_cameras() -> list[dict[str, Any]]:
     return all_realsense_cameras_info
 
 
-def find_and_print_cameras(camera_type_filter: str | None = None) -> list[dict[str, Any]]:
+def find_all_sentech_cameras(cti_path: Path | None = None, *, explicit: bool = False) -> list[dict[str, Any]]:
+    """
+    Finds all available Omron Sentech/GenICam cameras through a GenTL CTI producer.
+
+    Args:
+        cti_path: Path to a Sentech SDK CTI file, or a directory containing CTI files.
+        explicit: Whether the user specifically requested Sentech camera discovery.
+    """
+    all_sentech_cameras_info: list[dict[str, Any]] = []
+    logger.info("Searching for Sentech/GenICam cameras...")
+    try:
+        sentech_cameras = SentechCamera.find_cameras(cti_path=cti_path)
+        for cam_info in sentech_cameras:
+            all_sentech_cameras_info.append(cam_info)
+        logger.info(f"Found {len(sentech_cameras)} Sentech/GenICam cameras.")
+    except ImportError:
+        logger.warning(
+            "Skipping Sentech camera search: harvesters library not found. "
+            "Install with `pip install 'lerobot[sentech]'`."
+        )
+    except FileNotFoundError as e:
+        if explicit:
+            logger.warning(str(e))
+        else:
+            logger.info(f"Skipping Sentech camera search: {e}")
+    except Exception as e:
+        logger.error(f"Error finding Sentech cameras: {e}")
+
+    return all_sentech_cameras_info
+
+
+def find_and_print_cameras(
+    camera_type_filter: str | None = None, cti_path: Path | None = None
+) -> list[dict[str, Any]]:
     """
     Finds available cameras based on an optional filter and prints their information.
 
     Args:
-        camera_type_filter: Optional string to filter cameras ("realsense" or "opencv").
+        camera_type_filter: Optional string to filter cameras ("realsense", "opencv", or "sentech").
                             If None, lists all cameras.
+        cti_path: Optional GenTL CTI file or directory for Sentech/GenICam cameras.
 
     Returns:
         A list of all available cameras matching the filter, with their metadata.
@@ -108,6 +144,10 @@ def find_and_print_cameras(camera_type_filter: str | None = None) -> list[dict[s
         all_cameras_info.extend(find_all_opencv_cameras())
     if camera_type_filter is None or camera_type_filter == "realsense":
         all_cameras_info.extend(find_all_realsense_cameras())
+    if camera_type_filter is None or camera_type_filter == "sentech":
+        all_cameras_info.extend(
+            find_all_sentech_cameras(cti_path=cti_path, explicit=camera_type_filter == "sentech")
+        )
 
     if not all_cameras_info:
         if camera_type_filter:
@@ -174,6 +214,13 @@ def create_camera_instance(cam_meta: dict[str, Any]) -> dict[str, Any] | None:
                 color_mode=ColorMode.RGB,
             )
             instance = RealSenseCamera(rs_config)
+        elif cam_type == "Sentech":
+            st_config = SentechCameraConfig(
+                cti_path=cam_meta.get("cti_path"),
+                serial_number_or_name=cam_id,
+                color_mode=ColorMode.RGB,
+            )
+            instance = SentechCamera(st_config)
         else:
             logger.warning(f"Unknown camera type: {cam_type} for ID {cam_id}. Skipping.")
             return None
@@ -231,6 +278,7 @@ def save_images_from_all_cameras(
     output_dir: Path,
     record_time_s: float = 2.0,
     camera_type: str | None = None,
+    cti_path: Path | None = None,
 ):
     """
     Connects to detected cameras (optionally filtered by type) and saves images from each.
@@ -239,12 +287,13 @@ def save_images_from_all_cameras(
     Args:
         output_dir: Directory to save images.
         record_time_s: Duration in seconds to record images.
-        camera_type: Optional string to filter cameras ("realsense" or "opencv").
+        camera_type: Optional string to filter cameras ("realsense", "opencv", or "sentech").
                             If None, uses all detected cameras.
+        cti_path: Optional GenTL CTI file or directory for Sentech/GenICam cameras.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Saving images to {output_dir}")
-    all_camera_metadata = find_and_print_cameras(camera_type_filter=camera_type)
+    all_camera_metadata = find_and_print_cameras(camera_type_filter=camera_type, cti_path=cti_path)
 
     if not all_camera_metadata:
         logger.warning("No cameras detected matching the criteria. Cannot save images.")
@@ -296,8 +345,20 @@ def main():
         type=str,
         nargs="?",
         default=None,
-        choices=["realsense", "opencv"],
-        help="Specify camera type to capture from (e.g., 'realsense', 'opencv'). Captures from all if omitted.",
+        choices=["realsense", "opencv", "sentech"],
+        help=(
+            "Specify camera type to capture from (e.g., 'realsense', 'opencv', 'sentech'). "
+            "Captures from all if omitted."
+        ),
+    )
+    parser.add_argument(
+        "--cti-path",
+        type=Path,
+        default=None,
+        help=(
+            "GenTL CTI file or directory for Sentech/GenICam cameras. "
+            "Can also be set with LEROBOT_SENTECH_CTI."
+        ),
     )
     parser.add_argument(
         "--output-dir",
