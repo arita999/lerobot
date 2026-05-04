@@ -54,10 +54,12 @@ from lerobot.robots import (  # noqa: F401
     Robot,
     RobotConfig,
     bi_so_follower,
+    bi_starai_follower,
     koch_follower,
     make_robot_from_config,
     omx_follower,
     so_follower,
+    starai_follower,
 )
 from lerobot.transport import (
     services_pb2,  # type: ignore

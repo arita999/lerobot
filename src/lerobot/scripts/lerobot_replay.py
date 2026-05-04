@@ -57,6 +57,7 @@ from lerobot.robots import (  # noqa: F401
     RobotConfig,
     bi_openarm_follower,
     bi_so_follower,
+    bi_starai_follower,
     earthrover_mini_plus,
     hope_jr,
     koch_follower,
@@ -65,6 +66,7 @@ from lerobot.robots import (  # noqa: F401
     openarm_follower,
     reachy2,
     so_follower,
+    starai_follower,
     unitree_g1,
 )
 from lerobot.utils.constants import ACTION

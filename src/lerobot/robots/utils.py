@@ -56,6 +56,18 @@ def make_robot_from_config(config: RobotConfig) -> Robot:
         from .bi_so_follower import BiSOFollower
 
         return BiSOFollower(config)
+    elif config.type in {"starai_viola", "lerobot_robot_viola"}:
+        from .starai_follower import StaraiViola
+
+        return StaraiViola(config)
+    elif config.type in {"starai_cello", "lerobot_robot_cello"}:
+        from .starai_follower import StaraiCello
+
+        return StaraiCello(config)
+    elif config.type in {"bi_starai_follower", "lerobot_robot_bimanual_follower"}:
+        from .bi_starai_follower import BiStaraiFollower
+
+        return BiStaraiFollower(config)
     elif config.type == "reachy2":
         from .reachy2 import Reachy2Robot
 

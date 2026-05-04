@@ -101,6 +101,7 @@ from lerobot.robots import (  # noqa: F401
     RobotConfig,
     bi_openarm_follower,
     bi_so_follower,
+    bi_starai_follower,
     earthrover_mini_plus,
     hope_jr,
     koch_follower,
@@ -109,6 +110,7 @@ from lerobot.robots import (  # noqa: F401
     openarm_follower,
     reachy2,
     so_follower,
+    starai_follower,
     unitree_g1 as unitree_g1_robot,
 )
 from lerobot.teleoperators import (  # noqa: F401
@@ -116,6 +118,7 @@ from lerobot.teleoperators import (  # noqa: F401
     TeleoperatorConfig,
     bi_openarm_leader,
     bi_so_leader,
+    bi_starai_leader,
     homunculus,
     koch_leader,
     make_teleoperator_from_config,
@@ -124,6 +127,7 @@ from lerobot.teleoperators import (  # noqa: F401
     openarm_mini,
     reachy2_teleoperator,
     so_leader,
+    starai_leader,
     unitree_g1,
 )
 from lerobot.teleoperators.keyboard import KeyboardTeleop
