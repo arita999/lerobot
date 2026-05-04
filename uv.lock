@@ -1327,6 +1327,18 @@ wheels = [
 ]
 
 [[package]]
+name = "fashionstar-uart-sdk"
+version = "1.3.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyserial" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d0/1a/c6f369b79baad98a2646e11488a08e82ca87df4dea9f4d05693ee23d13e1/fashionstar_uart_sdk-1.3.9.tar.gz", hash = "sha256:519e06962c1f673b181152b73a19a9010f581b99d035edad7607e9049a0f169d", size = 12816, upload-time = "2026-04-30T14:49:49.961Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/be/065f176948d631766035b9d07c439bcf9ac9371f18688e6928bacda5aaa1/fashionstar_uart_sdk-1.3.9-py3-none-any.whl", hash = "sha256:c9f76ca8fd60457e00274440efeb642a691cc7e80aa344045ec7a034ff6c3c76", size = 12852, upload-time = "2026-04-30T14:49:48.522Z" },
+]
+
+[[package]]
 name = "fastapi"
 version = "0.136.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2628,6 +2640,7 @@ all = [
     { name = "diffusers" },
     { name = "dynamixel-sdk" },
     { name = "faker" },
+    { name = "fashionstar-uart-sdk" },
     { name = "fastapi" },
     { name = "feetech-servo-sdk" },
     { name = "grpcio" },
@@ -2919,6 +2932,10 @@ smolvla = [
     { name = "num2words" },
     { name = "transformers" },
 ]
+starai = [
+    { name = "fashionstar-uart-sdk" },
+    { name = "pyserial" },
+]
 test = [
     { name = "mock-serial", marker = "sys_platform != 'win32'" },
     { name = "pytest" },
@@ -2983,6 +3000,7 @@ requires-dist = [
     { name = "dynamixel-sdk", marker = "extra == 'dynamixel'", specifier = ">=3.7.31,<3.9.0" },
     { name = "einops", specifier = ">=0.8.0,<0.9.0" },
     { name = "faker", marker = "extra == 'sarm'", specifier = ">=33.0.0,<35.0.0" },
+    { name = "fashionstar-uart-sdk", marker = "extra == 'starai'", specifier = ">=1.3.6,<2.0.0" },
     { name = "fastapi", marker = "extra == 'phone'", specifier = "<1.0" },
     { name = "feetech-servo-sdk", marker = "extra == 'feetech'", specifier = ">=1.0.0,<2.0.0" },
     { name = "flash-attn", marker = "sys_platform != 'darwin' and extra == 'groot'", specifier = ">=2.5.9,<3.0.0" },
@@ -3063,6 +3081,7 @@ requires-dist = [
     { name = "lerobot", extras = ["pyserial-dep"], marker = "extra == 'dynamixel'" },
     { name = "lerobot", extras = ["pyserial-dep"], marker = "extra == 'feetech'" },
     { name = "lerobot", extras = ["pyserial-dep"], marker = "extra == 'hardware'" },
+    { name = "lerobot", extras = ["pyserial-dep"], marker = "extra == 'starai'" },
     { name = "lerobot", extras = ["pyserial-dep"], marker = "extra == 'unitree-g1'" },
     { name = "lerobot", extras = ["pyzmq-dep"], marker = "extra == 'lekiwi'" },
     { name = "lerobot", extras = ["pyzmq-dep"], marker = "extra == 'unitree-g1'" },
@@ -3079,6 +3098,7 @@ requires-dist = [
     { name = "lerobot", extras = ["scipy-dep"], marker = "extra == 'wallx'" },
     { name = "lerobot", extras = ["sentech"], marker = "extra == 'all'" },
     { name = "lerobot", extras = ["smolvla"], marker = "extra == 'all'" },
+    { name = "lerobot", extras = ["starai"], marker = "extra == 'all'" },
     { name = "lerobot", extras = ["test"], marker = "extra == 'all'" },
     { name = "lerobot", extras = ["training"], marker = "extra == 'all'" },
     { name = "lerobot", extras = ["transformers-dep"], marker = "extra == 'groot'" },
@@ -3150,7 +3170,7 @@ requires-dist = [
     { name = "transformers", marker = "extra == 'transformers-dep'", specifier = "==5.3.0" },
     { name = "wandb", marker = "extra == 'training'", specifier = ">=0.24.0,<0.25.0" },
 ]
-provides-extras = ["dataset", "training", "hardware", "viz", "core-scripts", "evaluation", "dataset-viz", "av-dep", "pygame-dep", "placo-dep", "transformers-dep", "grpcio-dep", "can-dep", "peft-dep", "scipy-dep", "diffusers-dep", "qwen-vl-utils-dep", "matplotlib-dep", "pyserial-dep", "deepdiff-dep", "pynput-dep", "pyzmq-dep", "feetech", "dynamixel", "damiao", "robstride", "openarms", "gamepad", "hopejr", "lekiwi", "unitree-g1", "reachy2", "kinematics", "intelrealsense", "sentech", "phone", "diffusion", "wallx", "pi", "smolvla", "multi-task-dit", "groot", "sarm", "xvla", "hilserl", "async", "peft", "dev", "notebook", "test", "video-benchmark", "aloha", "pusht", "libero", "metaworld", "all"]
+provides-extras = ["dataset", "training", "hardware", "viz", "core-scripts", "evaluation", "dataset-viz", "av-dep", "pygame-dep", "placo-dep", "transformers-dep", "grpcio-dep", "can-dep", "peft-dep", "scipy-dep", "diffusers-dep", "qwen-vl-utils-dep", "matplotlib-dep", "pyserial-dep", "deepdiff-dep", "pynput-dep", "pyzmq-dep", "feetech", "dynamixel", "damiao", "robstride", "starai", "openarms", "gamepad", "hopejr", "lekiwi", "unitree-g1", "reachy2", "kinematics", "intelrealsense", "sentech", "phone", "diffusion", "wallx", "pi", "smolvla", "multi-task-dit", "groot", "sarm", "xvla", "hilserl", "async", "peft", "dev", "notebook", "test", "video-benchmark", "aloha", "pusht", "libero", "metaworld", "all"]
 
 [[package]]
 name = "librt"

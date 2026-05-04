@@ -1,0 +1,212 @@
+StarAI Robot Arm command memo
+============================
+
+Install StarAI dependencies
+---------------------------
+
+uv sync --locked --extra starai
+
+
+Find USB ports
+--------------
+
+uv run lerobot-find-port
+
+
+Single arm: Viola follower + Violin leader
+------------------------------------------
+
+Calibrate follower:
+
+uv run lerobot-calibrate \
+  --robot.type=lerobot_robot_viola \
+  --robot.port=/dev/ttyUSB0 \
+  --robot.id=starai_viola
+
+Calibrate leader:
+
+uv run lerobot-calibrate \
+  --teleop.type=lerobot_teleoperator_violin \
+  --teleop.port=/dev/ttyUSB1 \
+  --teleop.id=starai_violin
+
+Teleoperate:
+
+uv run lerobot-teleoperate \
+  --robot.type=lerobot_robot_viola \
+  --robot.port=/dev/ttyUSB0 \
+  --robot.id=starai_viola \
+  --teleop.type=lerobot_teleoperator_violin \
+  --teleop.port=/dev/ttyUSB1 \
+  --teleop.id=starai_violin
+
+Record dataset:
+
+uv run lerobot-record \
+  --robot.type=lerobot_robot_viola \
+  --robot.port=/dev/ttyUSB0 \
+  --robot.id=starai_viola \
+  --teleop.type=lerobot_teleoperator_violin \
+  --teleop.port=/dev/ttyUSB1 \
+  --teleop.id=starai_violin \
+  --dataset.repo_id=${HF_USER}/starai_viola_test \
+  --dataset.num_episodes=10 \
+  --dataset.single_task="Pick up the object" \
+  --display_data=true
+
+
+Single arm: Cello follower + Violin leader
+------------------------------------------
+
+Use this when the follower arm is StarAI Cello and the leader arm is StarAI
+Violin. The important difference from Viola is the follower robot type:
+`lerobot_robot_cello`.
+
+Suggested variables:
+
+export FOLLOWER_PORT=/dev/ttyUSB0
+export LEADER_PORT=/dev/ttyUSB1
+export FOLLOWER_ID=starai_cello
+export LEADER_ID=starai_violin
+export DATASET_REPO=${HF_USER}/starai_cello_test
+
+Calibrate Cello follower:
+
+uv run lerobot-calibrate \
+  --robot.type=lerobot_robot_cello \
+  --robot.port=${FOLLOWER_PORT} \
+  --robot.id=${FOLLOWER_ID}
+
+Calibrate Violin leader:
+
+uv run lerobot-calibrate \
+  --teleop.type=lerobot_teleoperator_violin \
+  --teleop.port=${LEADER_PORT} \
+  --teleop.id=${LEADER_ID}
+
+Teleoperate Cello from Violin:
+
+uv run lerobot-teleoperate \
+  --robot.type=lerobot_robot_cello \
+  --robot.port=${FOLLOWER_PORT} \
+  --robot.id=${FOLLOWER_ID} \
+  --teleop.type=lerobot_teleoperator_violin \
+  --teleop.port=${LEADER_PORT} \
+  --teleop.id=${LEADER_ID}
+
+Record Cello dataset:
+
+uv run lerobot-record \
+  --robot.type=lerobot_robot_cello \
+  --robot.port=${FOLLOWER_PORT} \
+  --robot.id=${FOLLOWER_ID} \
+  --teleop.type=lerobot_teleoperator_violin \
+  --teleop.port=${LEADER_PORT} \
+  --teleop.id=${LEADER_ID} \
+  --dataset.repo_id=${DATASET_REPO} \
+  --dataset.num_episodes=10 \
+  --dataset.single_task="Pick up the object" \
+  --display_data=true
+
+Record Cello dataset with cameras:
+
+uv run lerobot-record \
+  --robot.type=lerobot_robot_cello \
+  --robot.port=${FOLLOWER_PORT} \
+  --robot.id=${FOLLOWER_ID} \
+  --robot.cameras='{ front: {"type": "opencv", "index_or_path": 0, "width": 640, "height": 480, "fps": 30} }' \
+  --teleop.type=lerobot_teleoperator_violin \
+  --teleop.port=${LEADER_PORT} \
+  --teleop.id=${LEADER_ID} \
+  --dataset.repo_id=${DATASET_REPO} \
+  --dataset.num_episodes=10 \
+  --dataset.single_task="Pick up the object" \
+  --display_data=true
+
+Replay a Cello dataset:
+
+uv run lerobot-replay \
+  --robot.type=lerobot_robot_cello \
+  --robot.port=${FOLLOWER_PORT} \
+  --robot.id=${FOLLOWER_ID} \
+  --dataset.repo_id=${DATASET_REPO} \
+  --episode=0
+
+Run a trained policy on Cello:
+
+uv run lerobot-eval \
+  --robot.type=lerobot_robot_cello \
+  --robot.port=${FOLLOWER_PORT} \
+  --robot.id=${FOLLOWER_ID} \
+  --policy.path=${HF_USER}/my_starai_cello_policy \
+  --eval.n_episodes=10 \
+  --eval.batch_size=1
+
+Notes for Cello:
+
+- Use `lerobot_robot_cello` or the short alias `starai_cello`.
+- Keep the Violin leader type as `lerobot_teleoperator_violin`.
+- Reuse the same `--robot.id` after calibration so the saved Cello calibration
+  file is loaded automatically.
+- If `lerobot-find-port` shows different paths, update FOLLOWER_PORT and
+  LEADER_PORT before running the commands.
+
+
+Bimanual StarAI
+---------------
+
+Calibrate bimanual follower:
+
+uv run lerobot-calibrate \
+  --robot.type=lerobot_robot_bimanual_follower \
+  --robot.left_arm_port=/dev/ttyUSB0 \
+  --robot.right_arm_port=/dev/ttyUSB1 \
+  --robot.arm_name=starai_viola \
+  --robot.id=starai_bimanual_follower
+
+Calibrate bimanual leader:
+
+uv run lerobot-calibrate \
+  --teleop.type=lerobot_teleoperator_bimanual_leader \
+  --teleop.left_arm_port=/dev/ttyUSB2 \
+  --teleop.right_arm_port=/dev/ttyUSB3 \
+  --teleop.id=starai_bimanual_leader
+
+Teleoperate bimanual:
+
+uv run lerobot-teleoperate \
+  --robot.type=lerobot_robot_bimanual_follower \
+  --robot.left_arm_port=/dev/ttyUSB0 \
+  --robot.right_arm_port=/dev/ttyUSB1 \
+  --robot.arm_name=starai_viola \
+  --robot.id=starai_bimanual_follower \
+  --teleop.type=lerobot_teleoperator_bimanual_leader \
+  --teleop.left_arm_port=/dev/ttyUSB2 \
+  --teleop.right_arm_port=/dev/ttyUSB3 \
+  --teleop.id=starai_bimanual_leader
+
+Record bimanual dataset:
+
+uv run lerobot-record \
+  --robot.type=lerobot_robot_bimanual_follower \
+  --robot.left_arm_port=/dev/ttyUSB0 \
+  --robot.right_arm_port=/dev/ttyUSB1 \
+  --robot.arm_name=starai_viola \
+  --robot.id=starai_bimanual_follower \
+  --teleop.type=lerobot_teleoperator_bimanual_leader \
+  --teleop.left_arm_port=/dev/ttyUSB2 \
+  --teleop.right_arm_port=/dev/ttyUSB3 \
+  --teleop.id=starai_bimanual_leader \
+  --dataset.repo_id=${HF_USER}/starai_bimanual_test \
+  --dataset.num_episodes=10 \
+  --dataset.single_task="Pick up the object" \
+  --display_data=true
+
+
+Notes
+-----
+
+- Replace /dev/ttyUSB* with the actual ports from lerobot-find-port.
+- For Cello bimanual followers, use --robot.arm_name=starai_cello.
+- Short aliases also work: starai_viola, starai_cello, starai_violin,
+  bi_starai_follower, and bi_starai_leader.

@@ -83,6 +83,14 @@ def make_teleoperator_from_config(config: TeleoperatorConfig) -> "Teleoperator":
         from .bi_so_leader import BiSOLeader
 
         return BiSOLeader(config)
+    elif config.type in {"starai_violin", "starai_violin_leader", "lerobot_teleoperator_violin"}:
+        from .starai_leader import StaraiViolin
+
+        return StaraiViolin(config)
+    elif config.type in {"bi_starai_leader", "lerobot_teleoperator_bimanual_leader"}:
+        from .bi_starai_leader import BiStaraiLeader
+
+        return BiStaraiLeader(config)
     elif config.type == "reachy2_teleoperator":
         from .reachy2_teleoperator import Reachy2Teleoperator
 

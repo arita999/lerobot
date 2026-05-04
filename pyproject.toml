@@ -146,6 +146,7 @@ feetech = ["feetech-servo-sdk>=1.0.0,<2.0.0", "lerobot[pyserial-dep]", "lerobot[
 dynamixel = ["dynamixel-sdk>=3.7.31,<3.9.0", "lerobot[pyserial-dep]", "lerobot[deepdiff-dep]"]
 damiao = ["lerobot[can-dep]"]
 robstride = ["lerobot[can-dep]"]
+starai = ["fashionstar-uart-sdk>=1.3.6,<2.0.0", "lerobot[pyserial-dep]"]
 
 # Robots
 openarms = ["lerobot[damiao]"]
@@ -244,6 +245,7 @@ all = [
     "lerobot[feetech]",
     "lerobot[damiao]",
     "lerobot[robstride]",
+    "lerobot[starai]",
     "lerobot[gamepad]",
     "lerobot[hopejr]",
     "lerobot[lekiwi]",
