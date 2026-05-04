@@ -69,12 +69,28 @@ def is_package_available(
         return package_exists
 
 
+_require_package_cache: dict[str, bool] = {}
+
+
+def require_package(pkg_name: str, extra: str, import_name: str | None = None) -> None:
+    """Raise an informative ImportError if a package required by an optional feature is missing."""
+    cache_key = import_name or pkg_name
+    if cache_key not in _require_package_cache:
+        _require_package_cache[cache_key] = is_package_available(pkg_name, import_name)
+    if not _require_package_cache[cache_key]:
+        raise ImportError(
+            f"'{pkg_name}' is required but not installed. Install it with: "
+            f"pip install 'lerobot[{extra}]' (or uv pip install 'lerobot[{extra}]')"
+        )
+
+
 _transformers_available = is_package_available("transformers")
 _peft_available = is_package_available("peft")
 _scipy_available = is_package_available("scipy")
 _reachy2_sdk_available = is_package_available("reachy2_sdk")
 _can_available = is_package_available("python-can", "can")
 _unitree_sdk_available = is_package_available("unitree-sdk2py", "unitree_sdk2py")
+_harvesters_available = is_package_available("harvesters")
 _pygame_available = is_package_available("pygame")
 
 

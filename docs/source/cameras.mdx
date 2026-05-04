@@ -7,6 +7,7 @@ LeRobot offers multiple options for video capture:
 | `OpenCVCamera`    | Phone, built-in laptop, USB webcams |
 | `ZMQCamera`       | Network-connected cameras           |
 | `RealSenseCamera` | Intel RealSense (with depth)        |
+| `SentechCamera`   | Omron Sentech GigE Vision cameras   |
 | `Reachy2Camera`   | Reachy 2 robot cameras              |
 
 > [!TIP]
@@ -16,10 +17,11 @@ LeRobot offers multiple options for video capture:
 
 Every camera requires a unique identifier to be instantiated, allowing you to distinguish between multiple connected devices.
 
-`OpenCVCamera` and `RealSenseCamera` support auto-discovery. Run the command below to list available devices and their identifiers. Note that these identifiers may change after rebooting your computer or re-plugging the camera, depending on your operating system.
+`OpenCVCamera`, `RealSenseCamera`, and `SentechCamera` support auto-discovery. Run the command below to list available devices and their identifiers. Note that these identifiers may change after rebooting your computer or re-plugging the camera, depending on your operating system.
 
 ```bash
 lerobot-find-cameras opencv # or realsense for Intel Realsense cameras
+lerobot-find-cameras sentech --cti-path /path/to/Sentech_GenTL.cti
 ```
 
 The output will look something like this if you have two cameras connected:
@@ -44,6 +46,8 @@ Camera #0:
 > When using Intel RealSense cameras in `macOS`, you could get this [error](https://github.com/IntelRealSense/librealsense/issues/12307): `Error finding RealSense cameras: failed to set power state`, this can be solved by running the same command with `sudo` permissions. Note that using RealSense cameras in `macOS` is unstable.
 
 `ZMQCamera` and `Reachy2Camera` do not support auto-discovery. They must be configured manually by providing their network address and port or robot SDK settings.
+
+`SentechCamera` uses the GenTL producer (`*.cti`) installed with the Omron Sentech SDK. You can pass it with `--cti-path`, set `LEROBOT_SENTECH_CTI=/path/to/file.cti`, or use the standard `GENICAM_GENTL64_PATH`/`GENICAM_GENTL32_PATH` directory environment variables.
 
 ## Use cameras
 
@@ -155,6 +159,44 @@ finally:
     camera.disconnect()
 ```
 <!-- prettier-ignore-end -->
+
+</hfoption>
+<hfoption id="Omron Sentech GigE Camera">
+
+<!-- prettier-ignore-start -->
+```python
+from lerobot.cameras.sentech import SentechCamera, SentechCameraConfig
+from lerobot.cameras import ColorMode, Cv2Rotation
+
+config = SentechCameraConfig(
+    cti_path="/path/to/Sentech_GenTL.cti",
+    serial_number_or_name="YOUR_CAMERA_SERIAL",
+    fps=30,
+    width=640,
+    height=480,
+    color_mode=ColorMode.RGB,
+    rotation=Cv2Rotation.NO_ROTATION,
+    pixel_format="RGB8",  # Use "Mono8" or a Bayer8 format if that is what your camera exposes.
+)
+
+with SentechCamera(config) as camera:
+    frame = camera.read()
+    print("Frame shape:", frame.shape)
+```
+<!-- prettier-ignore-end -->
+
+The same camera can be used from scripts:
+
+```bash
+lerobot-record \
+  --robot.type=so100_follower \
+  --robot.port=/dev/tty.usbmodem58760431541 \
+  --robot.id=black \
+  --robot.cameras='{front: {type: sentech, cti_path: "/path/to/Sentech_GenTL.cti", serial_number_or_name: "YOUR_CAMERA_SERIAL", width: 640, height: 480, fps: 30, pixel_format: "RGB8"}}' \
+  --dataset.repo_id=${HF_USER}/my_dataset \
+  --dataset.num_episodes=2 \
+  --dataset.single_task="Grab the cube"
+```
 
 </hfoption>
 </hfoptions>
