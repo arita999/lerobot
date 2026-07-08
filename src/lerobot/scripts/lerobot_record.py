@@ -38,6 +38,9 @@ lerobot-record \\
     --display_data=true
 ```
 
+To stream the data to Foxglove instead of Rerun, add ``--display_mode=foxglove`` (then connect the
+Foxglove app to ``ws://127.0.0.1:8765``; override the port with ``--display_port=<port>``).
+
 Example recording with bimanual so100:
 ```shell
 lerobot-record \\
@@ -63,6 +66,27 @@ lerobot-record \\
   --dataset.streaming_encoding=true \\
   --dataset.encoder_threads=2
 ```
+
+Example recording with custom video encoding parameters:
+```shell
+lerobot-record \\
+    --robot.type=so100_follower \\
+    --robot.port=/dev/tty.usbmodem58760431541 \\
+    --robot.cameras="{laptop: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30}}" \\
+    --robot.id=black \\
+    --teleop.type=so100_leader \\
+    --teleop.port=/dev/tty.usbmodem58760431551 \\
+    --teleop.id=blue \\
+    --dataset.repo_id=<my_username>/<my_dataset_name> \\
+    --dataset.num_episodes=2 \\
+    --dataset.single_task="Grab the cube" \\
+    --dataset.streaming_encoding=true \\
+    --dataset.encoder_threads=2 \\
+    --dataset.rgb_encoder.vcodec=h264 \\
+    --dataset.rgb_encoder.preset=fast \\
+    --dataset.rgb_encoder.extra_options={"tune": "film", "profile:v": "high", "bf": 2} \\
+    --display_data=true
+```
 """
 
 import logging
@@ -76,11 +100,7 @@ from lerobot.cameras.reachy2_camera import Reachy2CameraConfig  # noqa: F401
 from lerobot.cameras.realsense import RealSenseCameraConfig  # noqa: F401
 from lerobot.cameras.sentech import SentechCameraConfig  # noqa: F401
 from lerobot.cameras.zmq import ZMQCameraConfig  # noqa: F401
-from lerobot.common.control_utils import (
-    init_keyboard_listener,
-    is_headless,
-    sanity_check_dataset_robot_compatibility,
-)
+from lerobot.common.control_utils import sanity_check_dataset_robot_compatibility
 from lerobot.configs import parser
 from lerobot.configs.dataset import DatasetRecordConfig
 from lerobot.datasets import (
@@ -100,6 +120,7 @@ from lerobot.robots import (  # noqa: F401
     Robot,
     RobotConfig,
     bi_openarm_follower,
+    bi_rebot_b601_follower,
     bi_so_follower,
     bi_starai_follower,
     earthrover_mini_plus,
@@ -109,6 +130,7 @@ from lerobot.robots import (  # noqa: F401
     omx_follower,
     openarm_follower,
     reachy2,
+    rebot_b601_follower,
     so_follower,
     starai_follower,
     unitree_g1 as unitree_g1_robot,
@@ -117,6 +139,8 @@ from lerobot.teleoperators import (  # noqa: F401
     Teleoperator,
     TeleoperatorConfig,
     bi_openarm_leader,
+    bi_openarm_mini,
+    bi_rebot_102_leader,
     bi_so_leader,
     bi_starai_leader,
     homunculus,
@@ -126,6 +150,7 @@ from lerobot.teleoperators import (  # noqa: F401
     openarm_leader,
     openarm_mini,
     reachy2_teleoperator,
+    rebot_102_leader,
     so_leader,
     starai_leader,
     unitree_g1,
@@ -134,12 +159,17 @@ from lerobot.teleoperators.keyboard import KeyboardTeleop
 from lerobot.utils.constants import ACTION, OBS_STR
 from lerobot.utils.feature_utils import build_dataset_frame, combine_feature_dicts
 from lerobot.utils.import_utils import register_third_party_plugins
+from lerobot.utils.keyboard_input import init_keyboard_listener
 from lerobot.utils.robot_utils import precise_sleep
 from lerobot.utils.utils import (
     init_logging,
     log_say,
 )
-from lerobot.utils.visualization_utils import init_rerun, log_rerun_data
+from lerobot.utils.visualization_utils import (
+    init_visualization,
+    log_visualization_data,
+    shutdown_visualization,
+)
 
 
 @dataclass
@@ -150,11 +180,14 @@ class RecordConfig:
     teleop: TeleoperatorConfig | None = None
     # Display all cameras on screen
     display_data: bool = False
-    # Display data on a remote Rerun server
+    # Visualization backend used when display_data is True: "rerun" or "foxglove".
+    display_mode: str = "rerun"
+    # For "rerun": IP of a remote server to send to. For "foxglove": interface to bind the WebSocket
+    # server to (127.0.0.1 for local only, 0.0.0.0 for all interfaces).
     display_ip: str | None = None
-    # Port of the remote Rerun server
+    # For "rerun": port of the remote server. For "foxglove": port to bind the WebSocket server to.
     display_port: int | None = None
-    # Whether to  display compressed images in Rerun
+    # Whether to display compressed (JPEG) images instead of raw frames
     display_compressed_images: bool = False
     # Use vocal synthesis to read events.
     play_sounds: bool = True
@@ -215,6 +248,7 @@ def record_loop(
     control_time_s: int | None = None,
     single_task: str | None = None,
     display_data: bool = False,
+    display_mode: str = "rerun",
     display_compressed_images: bool = False,
 ):
     if dataset is not None and dataset.fps != fps:
@@ -309,8 +343,11 @@ def record_loop(
             dataset.add_frame(frame)
 
         if display_data:
-            log_rerun_data(
-                observation=obs_processed, action=action_values, compress_images=display_compressed_images
+            log_visualization_data(
+                display_mode,
+                observation=obs_processed,
+                action=action_values,
+                compress_images=display_compressed_images,
             )
 
         dt_s = time.perf_counter() - start_loop_t
@@ -336,7 +373,9 @@ def record(
     init_logging()
     logging.info(pformat(asdict(cfg)))
     if cfg.display_data:
-        init_rerun(session_name="recording", ip=cfg.display_ip, port=cfg.display_port)
+        init_visualization(
+            cfg.display_mode, session_name="recording", ip=cfg.display_ip, port=cfg.display_port
+        )
     display_compressed_images = (
         True
         if (cfg.display_data and cfg.display_ip is not None and cfg.display_port is not None)
@@ -382,10 +421,11 @@ def record(
                 cfg.dataset.repo_id,
                 root=cfg.dataset.root,
                 batch_encoding_size=cfg.dataset.video_encoding_batch_size,
-                vcodec=cfg.dataset.vcodec,
+                rgb_encoder=cfg.dataset.rgb_encoder,
+                depth_encoder=cfg.dataset.depth_encoder,
+                encoder_threads=cfg.dataset.encoder_threads,
                 streaming_encoding=cfg.dataset.streaming_encoding,
                 encoder_queue_maxsize=cfg.dataset.encoder_queue_maxsize,
-                encoder_threads=cfg.dataset.encoder_threads,
                 image_writer_processes=cfg.dataset.num_image_writer_processes if num_cameras > 0 else 0,
                 image_writer_threads=cfg.dataset.num_image_writer_threads_per_camera * num_cameras
                 if num_cameras > 0
@@ -411,10 +451,11 @@ def record(
                 image_writer_processes=cfg.dataset.num_image_writer_processes,
                 image_writer_threads=cfg.dataset.num_image_writer_threads_per_camera * len(robot.cameras),
                 batch_encoding_size=cfg.dataset.video_encoding_batch_size,
-                vcodec=cfg.dataset.vcodec,
+                rgb_encoder=cfg.dataset.rgb_encoder,
+                depth_encoder=cfg.dataset.depth_encoder,
+                encoder_threads=cfg.dataset.encoder_threads,
                 streaming_encoding=cfg.dataset.streaming_encoding,
                 encoder_queue_maxsize=cfg.dataset.encoder_queue_maxsize,
-                encoder_threads=cfg.dataset.encoder_threads,
             )
 
         robot.connect()
@@ -425,7 +466,7 @@ def record(
 
         if not cfg.dataset.streaming_encoding:
             logging.info(
-                "Streaming encoding is disabled. If you have capable hardware, consider enabling it for way faster episode saving. --dataset.streaming_encoding=true --dataset.encoder_threads=2 # --dataset.vcodec=auto. More info in the documentation: https://huggingface.co/docs/lerobot/streaming_video_encoding"
+                "Streaming encoding is disabled. If you have capable hardware, consider enabling it for way faster episode saving. --dataset.streaming_encoding=true --dataset.encoder_threads=2 # --dataset.rgb_encoder.vcodec=auto. More info in the documentation: https://huggingface.co/docs/lerobot/streaming_video_encoding"
             )
 
         with VideoEncodingManager(dataset):
@@ -444,6 +485,7 @@ def record(
                     control_time_s=cfg.dataset.episode_time_s,
                     single_task=cfg.dataset.single_task,
                     display_data=cfg.display_data,
+                    display_mode=cfg.display_mode,
                     display_compressed_images=display_compressed_images,
                 )
 
@@ -465,6 +507,7 @@ def record(
                         control_time_s=cfg.dataset.reset_time_s,
                         single_task=cfg.dataset.single_task,
                         display_data=cfg.display_data,
+                        display_mode=cfg.display_mode,
                     )
 
                 if events["rerecord_episode"]:
@@ -487,8 +530,11 @@ def record(
         if teleop and teleop.is_connected:
             teleop.disconnect()
 
-        if not is_headless() and listener:
+        if listener is not None:
             listener.stop()
+
+        if cfg.display_data:
+            shutdown_visualization(cfg.display_mode)
 
         if cfg.dataset.push_to_hub:
             if dataset and dataset.num_episodes > 0:
